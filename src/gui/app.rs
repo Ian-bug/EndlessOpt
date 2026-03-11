@@ -88,6 +88,7 @@ pub struct EndlessOptApp {
     memory_usage: f32,
     memory_status: Option<MemoryStatus>,
     last_update: Instant,
+    sys: sysinfo::System,  // Reusable system instance
 
     // Process list
     processes: Vec<ProcessInfo>,
@@ -117,7 +118,7 @@ pub struct EndlessOptApp {
 
     // Confirmation dialogs
     show_kill_confirmation: bool,
-    process_to_kill: Option<(usize, String)>,
+    process_to_kill: Option<(u32, String)>,  // (pid, name)
 }
 
 impl EndlessOptApp {
@@ -150,6 +151,7 @@ impl EndlessOptApp {
             memory_usage: 0.0,
             memory_status: None,
             last_update: Instant::now(),
+            sys: sysinfo::System::new_all(),
             processes: Vec::new(),
             selected_process: None,
             process_filter: String::new(),
@@ -180,11 +182,10 @@ impl EndlessOptApp {
             }
 
             // Update CPU usage using sysinfo
-            let mut sys = sysinfo::System::new_all();
-            sys.refresh_cpu();
-            self.cpu_usage = sys.cpus().iter()
+            self.sys.refresh_cpu();
+            self.cpu_usage = self.sys.cpus().iter()
                 .map(|c| c.cpu_usage())
-                .sum::<f32>() / sys.cpus().len() as f32;
+                .sum::<f32>() / self.sys.cpus().len() as f32;
 
             // Update process list occasionally (only when viewing Processes tab)
             if self.current_tab == Tab::Processes &&
@@ -244,6 +245,7 @@ impl EndlessOptApp {
     }
 
     /// Activate game mode
+    #[allow(dead_code)]
     fn activate_game_mode(&mut self) {
         let mut game_mode = GameMode::new(
             self.config.game_processes.clone(),
@@ -271,6 +273,7 @@ impl EndlessOptApp {
     }
 
     /// Deactivate game mode
+    #[allow(dead_code)]
     fn deactivate_game_mode(&mut self) {
         let mut game_mode = GameMode::new(
             self.config.game_processes.clone(),
@@ -391,106 +394,55 @@ impl EndlessOptApp {
 
             // Status metrics row - Professional dashboard layout
             ui.horizontal(|ui| {
-                // CPU Metric Card - Glassmorphism
-                egui::Frame::none()
-                    .fill(self.colors.glass)
-                    .stroke(egui::Stroke::new(1.0, self.colors.border))
-                    .rounding(12.0)
-                    .shadow(egui::epaint::Shadow {
-                        offset: egui::vec2(0.0, 4.0),
-                        blur: 8.0,
-                        spread: 0.0,
-                        color: self.colors.shadow,
-                    })
-                    .show(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.add_space(15.0);
-                            ui.label(RichText::new("CPU Usage").size(14.0)
-                                .color(self.colors.text_secondary));
-                            ui.add_space(8.0);
-                            ui.label(RichText::new(format!("{:.1}%", self.cpu_usage)).size(32.0)
-                                .color(get_usage_color(self.cpu_usage, &self.colors))
-                                .strong());
-                            ui.label(RichText::new("Processor").size(12.0)
-                                .color(self.colors.text_secondary));
-                            ui.add_space(15.0);
-                        });
-                    });
+                // CPU Metric Card
+                show_metric_card(
+                    ui,
+                    &self.colors,
+                    "CPU Usage",
+                    &format!("{:.1}%", self.cpu_usage),
+                    "Processor",
+                    get_usage_color(self.cpu_usage, &self.colors),
+                    None,
+                );
 
                 ui.add_space(20.0);
 
-                // Memory Metric Card - Glassmorphism
-                egui::Frame::none()
-                    .fill(self.colors.glass)
-                    .stroke(egui::Stroke::new(1.0, self.colors.border))
-                    .rounding(12.0)
-                    .shadow(egui::epaint::Shadow {
-                        offset: egui::vec2(0.0, 4.0),
-                        blur: 8.0,
-                        spread: 0.0,
-                        color: self.colors.shadow,
-                    })
-                    .show(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.add_space(15.0);
-                            ui.label(RichText::new("Memory Usage").size(14.0)
-                                .color(self.colors.text_secondary));
-                            ui.add_space(8.0);
-                            ui.label(RichText::new(format!("{:.1}%", self.memory_usage)).size(32.0)
-                                .color(get_usage_color(self.memory_usage, &self.colors))
-                                .strong());
-                            if let Some(ref status) = self.memory_status {
-                                ui.label(RichText::new(format!(
-                                    "{} / {}",
-                                    MemoryStatus::format_bytes(status.total_phys - status.avail_phys),
-                                    MemoryStatus::format_bytes(status.total_phys)
-                                )).size(11.0).color(self.colors.text_secondary));
-                            }
-                            ui.label(RichText::new("RAM").size(12.0)
-                                .color(self.colors.text_secondary));
-                            ui.add_space(15.0);
-                        });
-                    });
+                // Memory Metric Card
+                let memory_subtitle = if let Some(ref status) = self.memory_status {
+                    format!("{}\nRAM", MemoryStatus::format_bytes(status.total_phys - status.avail_phys))
+                } else {
+                    "RAM".to_string()
+                };
+
+                show_metric_card(
+                    ui,
+                    &self.colors,
+                    "Memory Usage",
+                    &format!("{:.1}%", self.memory_usage),
+                    &memory_subtitle,
+                    get_usage_color(self.memory_usage, &self.colors),
+                    None,
+                );
 
                 ui.add_space(20.0);
 
-                // Game Mode Status - Glassmorphism
-                egui::Frame::none()
-                    .fill(self.colors.glass)
-                    .stroke(egui::Stroke::new(1.0, if self.game_mode_active {
-                        self.colors.success
-                    } else {
-                        self.colors.border
-                    }))
-                    .rounding(12.0)
-                    .shadow(egui::epaint::Shadow {
-                        offset: egui::vec2(0.0, 4.0),
-                        blur: 8.0,
-                        spread: 0.0,
-                        color: self.colors.shadow,
-                    })
-                    .show(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.add_space(15.0);
-                            ui.label(RichText::new("Game Mode").size(14.0)
-                                .color(self.colors.text_secondary));
-                            ui.add_space(8.0);
-                            ui.label(RichText::new(if self.game_mode_active {
-                                "Active"
-                            } else {
-                                "Inactive"
-                            }).size(24.0)
-                                .color(if self.game_mode_active {
-                                    self.colors.success
-                                } else {
-                                    self.colors.text_secondary
-                                })
-                                .strong());
-                            ui.label(RichText::new("Performance").size(12.0)
-                                .color(self.colors.text_secondary));
-                            ui.add_space(15.0);
-                        });
-                    });
+                // Game Mode Status Card
+                let game_mode_value = if self.game_mode_active { "Active" } else { "Inactive" };
+                let game_mode_color = if self.game_mode_active {
+                    self.colors.success
+                } else {
+                    self.colors.text_secondary
+                };
+
+                show_metric_card(
+                    ui,
+                    &self.colors,
+                    "Game Mode",
+                    game_mode_value,
+                    "Performance",
+                    game_mode_color,
+                    if self.game_mode_active { Some(self.colors.success) } else { None },
+                );
             });
 
             ui.add_space(30.0);
@@ -804,7 +756,7 @@ impl EndlessOptApp {
 
                                 if ui.button(RichText::new("Kill Process").color(Color32::RED)).clicked() {
                                     // Show confirmation dialog
-                                    self.process_to_kill = Some((idx, process_clone.name.clone()));
+                                    self.process_to_kill = Some((process_clone.pid, process_clone.name.clone()));
                                     self.show_kill_confirmation = true;
                                 }
 
@@ -973,8 +925,8 @@ impl EndlessOptApp {
     }
 
     fn show_kill_confirmation_dialog(&mut self, ctx: &egui::Context) {
-        let (process_idx, process_name) = match &self.process_to_kill {
-            Some((idx, name)) => (*idx, name.clone()),
+        let (pid, process_name) = match &self.process_to_kill {
+            Some((pid, name)) => (*pid, name.clone()),
             None => return,
         };
 
@@ -1008,27 +960,23 @@ impl EndlessOptApp {
                         ui.add_space(10.0);
 
                         if ui.button(RichText::new("Kill Process").color(Color32::RED)).clicked() {
-                            // Get the PID from the process list
-                            if process_idx < self.processes.len() {
-                                let pid = self.processes[process_idx].pid;
-                                match kill_process(pid) {
-                                    Ok(_) => {
-                                        self.show_status(
-                                            &format!("Process {} killed", process_name),
-                                            Color32::GREEN
-                                        );
-                                        self.selected_process = None;
-                                        // Refresh process list
-                                        if let Ok(processes) = get_all_processes(&self.config.blacklisted_processes) {
-                                            self.processes = processes;
-                                        }
+                            match kill_process(pid) {
+                                Ok(_) => {
+                                    self.show_status(
+                                        &format!("Process {} killed", process_name),
+                                        Color32::GREEN
+                                    );
+                                    self.selected_process = None;
+                                    // Refresh process list
+                                    if let Ok(processes) = get_all_processes(&self.config.blacklisted_processes) {
+                                        self.processes = processes;
                                     }
-                                    Err(e) => {
-                                        self.show_status(
-                                            &format!("Failed to kill process: {}", e),
-                                            Color32::RED
-                                        );
-                                    }
+                                }
+                                Err(e) => {
+                                    self.show_status(
+                                        &format!("Failed to kill process: {}", e),
+                                        Color32::RED
+                                    );
                                 }
                             }
                             self.show_kill_confirmation = false;
@@ -1043,6 +991,42 @@ impl EndlessOptApp {
 }
 
 // Helper functions
+
+/// Show a unified metric card with glassmorphism styling
+fn show_metric_card(
+    ui: &mut egui::Ui,
+    colors: &Colors,
+    title: &str,
+    value: &str,
+    subtitle: &str,
+    value_color: Color32,
+    border_color: Option<Color32>,
+) {
+    egui::Frame::none()
+        .fill(colors.glass)
+        .stroke(egui::Stroke::new(1.0, border_color.unwrap_or(colors.border)))
+        .rounding(12.0)
+        .shadow(egui::epaint::Shadow {
+            offset: egui::vec2(0.0, 4.0),
+            blur: 8.0,
+            spread: 0.0,
+            color: colors.shadow,
+        })
+        .show(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add_space(15.0);
+                ui.label(RichText::new(title).size(14.0)
+                    .color(colors.text_secondary));
+                ui.add_space(8.0);
+                ui.label(RichText::new(value).size(32.0)
+                    .color(value_color)
+                    .strong());
+                ui.label(RichText::new(subtitle).size(12.0)
+                    .color(colors.text_secondary));
+                ui.add_space(15.0);
+            });
+        });
+}
 
 fn get_usage_color(usage: f32, colors: &Colors) -> Color32 {
     if usage < 50.0 {

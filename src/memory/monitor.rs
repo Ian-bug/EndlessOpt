@@ -41,16 +41,19 @@ impl MemoryStatus {
     }
 
     /// Get available physical memory in bytes
+    #[allow(dead_code)]
     pub fn get_available_memory() -> Result<u64, Box<dyn std::error::Error>> {
         Ok(Self::get()?.avail_phys)
     }
 
     /// Get total physical memory in bytes
+    #[allow(dead_code)]
     pub fn get_total_memory() -> Result<u64, Box<dyn std::error::Error>> {
         Ok(Self::get()?.total_phys)
     }
 
     /// Get memory load percentage (0-100)
+    #[allow(dead_code)]
     pub fn get_memory_load_percent() -> Result<u32, Box<dyn std::error::Error>> {
         Ok(Self::get()?.memory_load)
     }
@@ -58,10 +61,11 @@ impl MemoryStatus {
     /// Get memory usage percentage as f32
     pub fn get_memory_usage_percent() -> Result<f32, Box<dyn std::error::Error>> {
         let status = Self::get()?;
-        Ok((status.memory_load as f32))
+        Ok(status.memory_load as f32)
     }
 
     /// Get used physical memory in bytes
+    #[allow(dead_code)]
     pub fn get_used_memory() -> Result<u64, Box<dyn std::error::Error>> {
         let status = Self::get()?;
         Ok(status.total_phys - status.avail_phys)

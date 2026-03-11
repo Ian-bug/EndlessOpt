@@ -104,11 +104,13 @@ impl Config {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_process_blacklisted(&self, name: &str) -> bool {
         self.blacklisted_processes.iter()
             .any(|p| p.eq_ignore_ascii_case(name))
     }
 
+    #[allow(dead_code)]
     pub fn is_game_process(&self, name: &str) -> bool {
         self.game_processes.iter()
             .any(|p| p.eq_ignore_ascii_case(name))

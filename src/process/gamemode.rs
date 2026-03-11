@@ -16,6 +16,7 @@ pub struct GameMode {
 
 impl GameMode {
     /// Create a new game mode configuration
+    #[allow(dead_code)]
     pub fn new(
         game_processes: Vec<String>,
         game_priority: PriorityClass,
@@ -34,6 +35,7 @@ impl GameMode {
     }
 
     /// Activate game mode optimization
+    #[allow(dead_code)]
     pub fn activate(&mut self) -> ProcessResult<ActivationResult> {
         let mut sys = System::new_all();
         sys.refresh_processes();
@@ -94,6 +96,7 @@ impl GameMode {
     }
 
     /// Deactivate game mode and restore normal priorities
+    #[allow(dead_code)]
     pub fn deactivate(&mut self) -> ProcessResult<DeactivationResult> {
         let mut sys = System::new_all();
         sys.refresh_processes();
@@ -124,6 +127,7 @@ impl GameMode {
     }
 
     /// Check if any game processes are currently running
+    #[allow(dead_code)]
     pub fn are_games_running(&self) -> bool {
         let mut sys = System::new_all();
         sys.refresh_processes();
@@ -183,6 +187,7 @@ impl DeactivationResult {
 }
 
 /// Auto-detect common game processes
+#[allow(dead_code)]
 pub fn detect_common_games() -> Vec<String> {
     vec![
         // Common game launchers

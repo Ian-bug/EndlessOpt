@@ -1,6 +1,5 @@
 use windows::Win32::System::Threading::{
-    OpenProcess, SetPriorityClass, GetPriorityClass,
-    PROCESS_QUERY_INFORMATION, PROCESS_SET_INFORMATION,
+    OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_SET_INFORMATION,
 };
 use windows::Win32::Foundation::CloseHandle;
 use sysinfo::{System, Pid};

@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
 
 /// Result type for cleaning operations
 pub type CleanResult<T> = Result<T, Box<dyn std::error::Error>>;
