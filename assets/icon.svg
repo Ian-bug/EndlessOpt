@@ -35,10 +35,10 @@
   </defs>
 
   <!-- Main background with rounded corners -->
-  <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#bgGradient)"/>
+  <!-- <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#bgGradient)"/> -->
 
   <!-- Glassmorphism overlay -->
-  <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#glassOverlay)"/>
+  <!-- <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#glassOverlay)"/> -->
 
   <!-- Center glow -->
   <circle cx="256" cy="256" r="180" fill="url(#centerGlow)"/>
