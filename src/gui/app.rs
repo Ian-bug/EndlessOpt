@@ -212,11 +212,19 @@ impl EndlessOptApp {
 
         let mut results = Vec::new();
 
-        // PCL-style advanced memory optimization
-        if let Ok(result) = crate::memory::optimizer::optimize_memory_pcl_style(
-            crate::memory::optimizer::OptimizationLevel::Aggressive
-        ) {
-            results.push(format!("Memory: {}", result.summary()));
+        // Advanced NT API memory optimization (proper PCL-CE style)
+        match crate::memory::optimizer::optimize_memory_advanced() {
+            Ok(result) => {
+                results.push(format!("Memory: {}", result.summary()));
+            }
+            Err(e) => {
+                if e.to_string().contains("Administrator privileges required") {
+                    results.push("Memory: Requires admin privileges".to_string());
+                    self.show_status("Memory optimization requires admin privileges", self.colors.warning);
+                } else {
+                    results.push(format!("Memory: Failed - {}", e));
+                }
+            }
         }
 
         // Optimize processes
@@ -575,14 +583,16 @@ impl EndlessOptApp {
                 }
 
                 if clean_memory_response.clicked() {
-                    match crate::memory::optimizer::optimize_memory_pcl_style(
-                        crate::memory::optimizer::OptimizationLevel::Aggressive
-                    ) {
+                    match crate::memory::optimizer::optimize_memory_advanced() {
                         Ok(result) => {
                             self.show_status(&result.user_friendly_summary(), self.colors.success);
                         }
                         Err(e) => {
-                            self.show_status(&format!("Failed to clean memory: {}", e), self.colors.error);
+                            if e.to_string().contains("Administrator privileges required") {
+                                self.show_status("Admin privileges required. Please run as administrator.", self.colors.error);
+                            } else {
+                                self.show_status(&format!("Failed to clean memory: {}", e), self.colors.error);
+                            }
                         }
                     }
                 }
