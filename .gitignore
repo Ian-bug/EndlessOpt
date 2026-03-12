@@ -32,3 +32,6 @@ config.local.json
 # Temporary
 *.tmp
 *.temp
+
+# AI agent
+/.claude/
