@@ -213,7 +213,7 @@ impl EndlessOptApp {
         let mut results = Vec::new();
 
         // Clean memory
-        if let Ok(stats) = crate::memory::optimizer::clean_system_memory() {
+        if let Ok(stats) = crate::memory::optimizer::clean_system_memory_filtered(&self.config.blacklisted_processes) {
             results.push(format!("Memory: {}", stats.summary()));
         }
 
@@ -573,7 +573,7 @@ impl EndlessOptApp {
                 }
 
                 if clean_memory_response.clicked() {
-                    match crate::memory::optimizer::clean_system_memory() {
+                    match crate::memory::optimizer::clean_system_memory_filtered(&self.config.blacklisted_processes) {
                         Ok(stats) => {
                             self.show_status(&format!("Memory cleaned: {}", stats.summary()), self.colors.success);
                         }

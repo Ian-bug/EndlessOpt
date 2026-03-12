@@ -1,6 +1,6 @@
 use crate::process::manager::{PriorityClass, set_process_priority};
 use crate::process::manager::ProcessResult;
-use crate::memory::optimizer::{clean_system_memory, CleanStats};
+use crate::memory::optimizer::{clean_system_memory_filtered, CleanStats};
 use sysinfo::System;
 
 /// Game mode state and configuration
@@ -77,9 +77,9 @@ impl GameMode {
             }
         }
 
-        // Clean memory if enabled
+        // Clean memory if enabled (using filtered cleaning)
         let memory_stats = if self.clean_memory {
-            Some(clean_system_memory()?)
+            Some(clean_system_memory_filtered(&[])?)
         } else {
             None
         };
